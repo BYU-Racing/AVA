@@ -6,34 +6,74 @@ PARTITION = 1000.
 THEME = ["Arduino", "Jarvis", "Daylight"]
 SHOW_INSTANTS = False
 
-SOURCE = 'Data/Master.csv'
+REAL_DATA = True
+DATA_PATH = 'Data/'
+DEFAULT_SOURCE = DATA_PATH + 'Master.csv'
 LOCAL_HOST = "http://127.0.0.1:8050/"
 CHROME = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
 
 # convert each sensor to a number
 class Sensor(Enum):
-    ACC1 = 0
-    ACC2 = 1
-    BRAKE = 2
-    SWITCH = 3
+    THROT = 192
+    BRAKE = 11
+    SWITCH = 15
+    DAMP1 = 12
+
+    DAMP2 = 13
+    DAMP3 = 14
+    DAMP4 = 10
     ANGLE = 4
     TIRE1 = 5
     TIRE2 = 6
     TIRE3 = 7
     TIRE4 = 8
-    DAMP1 = 9
-    DAMP2 = 10
-    DAMP3 = 11
-    DAMP4 = 12
-    TEMP = 13
-    LIGHT = 14
-    GFORCE = 15
+    TEMP = 16
+    LIGHT = 17
+    GFORCE = 18
+
+
+# convert each sensor index to its abbreviated name
+sensor_names = {
+    Sensor.THROT: "THROTTLE",
+    Sensor.BRAKE: "BRAKE",
+    Sensor.SWITCH: "SWITCH",
+    Sensor.ANGLE: "ANGLE",
+    Sensor.TIRE1: "TIRE1",
+    Sensor.TIRE2: "TIRE2",
+    Sensor.TIRE3: "TIRE3",
+    Sensor.TIRE4: "TIRE4",
+    Sensor.DAMP1: "DAMP1",
+    Sensor.DAMP2: "DAMP2",
+    Sensor.DAMP3: "DAMP3",
+    Sensor.DAMP4: "DAMP4",
+    Sensor.TEMP: "TEMP",
+    Sensor.LIGHT: "LIGHT",
+    Sensor.GFORCE: "GFORCE",
+}
+
+# convert an index to a sensor display name
+sensors = {
+    Sensor.THROT: 'Throttle Position',
+    Sensor.BRAKE: 'Brake Pressure',
+    Sensor.SWITCH: 'Power Switch',
+    Sensor.ANGLE: 'Steering Wheel Angle',
+    Sensor.TIRE1: 'Front Left Tire',
+    Sensor.TIRE2: 'Front Right Tire',
+    Sensor.TIRE3: 'Back Left Tire',
+    Sensor.TIRE4: 'Back Right Tire',
+    Sensor.DAMP1: 'Front Left Damper',
+    Sensor.DAMP2: 'Front Right Damper',
+    Sensor.DAMP3: 'Back Left Damper',
+    Sensor.DAMP4: 'Back Right Damper',
+    Sensor.TEMP: 'Battery Temperature',
+    Sensor.LIGHT: 'Rain Light',
+    Sensor.GFORCE: 'G-Force',
+}
 
 
 # sensor constants
 weights = {
-    "W_ACC1": 0.0,
-    "W_ACC2": 0.0,
+    "W_THROT": 0.0,
     "W_BRAKE": 0.0,
     "W_SWITCH": 0.0,
     "W_ANGLE": 0.0,
@@ -51,8 +91,7 @@ weights = {
 }
 
 biases = {
-    "B_ACC1": 0.0,
-    "B_ACC2": 0.0,
+    "B_THROT": 0.0,
     "B_BRAKE": 0.0,
     "B_SWITCH": 0.0,
     "B_ANGLE": 0.0,
@@ -70,8 +109,7 @@ biases = {
 }
 
 minimums = {
-    "N_ACC1": 0.0,
-    "N_ACC2": 0.0,
+    "N_THROT": 0.0,
     "N_BRAKE": 0.0,
     "N_SWITCH": 0.0,
     "N_ANGLE": 0.0,
@@ -89,8 +127,7 @@ minimums = {
 }
 
 maximums = {
-    "X_ACC1": 1.0,
-    "X_ACC2": 1.0,
+    "X_THROT": 1.0,
     "X_BRAKE": 1.0,
     "X_SWITCH": 1.0,
     "X_ANGLE": 1.0,
@@ -105,46 +142,6 @@ maximums = {
     "X_TEMP": 1.0,
     "X_LIGHT": 1.0,
     "X_GFORCE": 1.0,
-}
-
-# convert each sensor index to its abbreviated name
-sensor_names = {
-    0: "ACC1",
-    1: "ACC2",
-    2: "BRAKE",
-    3: "SWITCH",
-    4: "ANGLE",
-    5: "TIRE1",
-    6: "TIRE2",
-    7: "TIRE3",
-    8: "TIRE4",
-    9: "DAMP1",
-    10: "DAMP2",
-    11: "DAMP3",
-    12: "DAMP4",
-    13: "TEMP",
-    14: "LIGHT",
-    15: "GFORCE",
-}
-
-# convert an index to a sensor display name
-sensors = {
-    0: 'Accelerator 1',
-    1: 'Accelerator 2',
-    2: 'Brake Pressure',
-    3: 'Power Switch',
-    4: 'Steering Wheel Angle',
-    5: 'Front Left Tire',
-    6: 'Front Right Tire',
-    7: 'Back Left Tire',
-    8: 'Back Right Tire',
-    9: 'Front Left Damper',
-    10: 'Front Right Damper',
-    11: 'Back Left Damper',
-    12: 'Back Right Damper',
-    13: 'Battery Temperature',
-    14: 'Rain Light',
-    15: 'G-Force',
 }
 
 # theme customization

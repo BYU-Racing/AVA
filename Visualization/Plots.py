@@ -20,7 +20,7 @@ spd = np.ones(n)
 x, y = convert_position(spd, tim, deg)
 
 
-def display_dashboard(all_frames, theme="Dark", size="medium", avail=None, num_plots=7, num_ticks=1):
+def display_dashboard(all_frames, theme="Jarvis", size="medium", avail=None, num_plots=7, num_ticks=3):
     """
     Display a Dash dashboard with racing sensor data
     Parameters:
@@ -43,167 +43,164 @@ def display_dashboard(all_frames, theme="Dark", size="medium", avail=None, num_p
     graph_mode = 'lines'
     index_trace = 0
     dots = 1 / PARTITION
-    frameLength = len(all_frames[Sensor.ACC1.value]["Timestamp"])
+    frameLength = len(all_frames[Sensor.THROT.value]["Time"])
 
-    # PLOT 1: ACCELERATORS ---------------------------------------------------------------------------------------------
-    if Sensor.ACC1.value in avail:
+    # PLOT 1: ACCELERATOR ----------------------------------------------------------------------------------------------
+    if Sensor.THROT.value in avail:
         # increment row index for subplots
         row += 1
 
         # update legend dictionary with correct sensor for other plots
-        legend.update({index_trace: sensors[Sensor.ACC1.value]})
+        legend.update({index_trace: sensors[Sensor.THROT]})
 
         # increment trace so that other plots can stay consistent with order
         index_trace += 1
 
         # add a trace to the growth subplot using data on the corresponding row from all_frames
-        fig.add_trace(go.Scatter(x=all_frames[Sensor.ACC1.value]["Timestamp"],
-                                 y=all_frames[Sensor.ACC1.value]["Data"],
+        fig.add_trace(go.Scatter(x=all_frames[Sensor.THROT.value]["Time"],
+                                 y=all_frames[Sensor.THROT.value]["Data"],
                                  marker=dict(color=themes[theme]["trace"][0][2]),
-                                 mode=graph_mode, name=sensors[Sensor.ACC1.value]), row=row, col=1, ),
+                                 mode=graph_mode, name=sensors[Sensor.THROT]), row=row, col=1, ),
 
-    # repeat for every other sensor
-    if Sensor.ACC2.value in avail:
-        legend.update({index_trace: sensors[Sensor.ACC2.value]})
-        index_trace += 1
-        fig.add_trace(go.Scatter(x=all_frames[Sensor.ACC2.value]["Timestamp"],
-                                 y=all_frames[Sensor.ACC2.value]["Data"],
-                                 marker=dict(color=themes[theme]["trace"][1][2]),
-                                 mode=graph_mode, name=sensors[Sensor.ACC2.value]), row=row, col=1)
-
-        fig.update_yaxes(nticks=num_ticks, title_text="Accelerator", row=row, col=1)
+        fig.update_yaxes(nticks=num_ticks, title_text="Throttle", row=row, col=1)
         fig.update_xaxes(visible=False, showticklabels=False)
+
 
     # PLOT 2: BRAKE SENSORS --------------------------------------------------------------------------------------------
     if Sensor.BRAKE.value in avail:
         row += 1
-        legend.update({index_trace: sensors[Sensor.BRAKE.value]})
+        legend.update({index_trace: sensors[Sensor.BRAKE]})
         index_trace += 1
 
-        fig.add_trace(go.Scatter(x=all_frames[Sensor.BRAKE.value]["Timestamp"],
+        fig.add_trace(go.Scatter(x=all_frames[Sensor.BRAKE.value]["Time"],
                                  y=all_frames[Sensor.BRAKE.value]["Data"],
                                  marker=dict(color=themes[theme]["trace"][1][2]),
-                                 mode=graph_mode, name=sensors[Sensor.BRAKE.value]), row=row, col=1)
+                                 mode=graph_mode, name=sensors[Sensor.BRAKE]), row=row, col=1)
 
         fig.update_yaxes(nticks=num_ticks, title_text="Brake", row=row, col=1)
         fig.update_xaxes(visible=False, showticklabels=False)
 
+
     # PLOT 3: TIRE SPEEDS ----------------------------------------------------------------------------------------------
     if Sensor.TIRE1.value in avail:
         row += 1
-        legend.update({index_trace: sensors[Sensor.TIRE1.value]})
+        legend.update({index_trace: sensors[Sensor.TIRE1]})
         index_trace += 1
 
-        fig.add_trace(go.Scatter(x=all_frames[Sensor.TIRE1.value]["Timestamp"],
+        fig.add_trace(go.Scatter(x=all_frames[Sensor.TIRE1.value]["Time"],
                                  y=all_frames[Sensor.TIRE1.value]["Data"],
                                  marker=dict(color=themes[theme]["trace"][2][2],
                                              size=dots),
-                                 mode=graph_mode, name=sensors[Sensor.TIRE1.value]), row=row, col=1)
+                                 mode=graph_mode, name=sensors[Sensor.TIRE1]), row=row, col=1)
+
+        fig.update_yaxes(nticks=num_ticks, title_text="Tires", row=row, col=1)
+        fig.update_xaxes(visible=False, showticklabels=False)
+
     # TIRE 2 PLOT
     if Sensor.TIRE2.value in avail:
-        legend.update({index_trace: sensors[Sensor.TIRE2.value]})
+        legend.update({index_trace: sensors[Sensor.TIRE2]})
         index_trace += 1
 
-        fig.add_trace(go.Scatter(x=all_frames[Sensor.TIRE2.value]["Timestamp"],
+        fig.add_trace(go.Scatter(x=all_frames[Sensor.TIRE2.value]["Time"],
                                  y=all_frames[Sensor.TIRE2.value]["Data"],
                                  marker=dict(color=themes[theme]["trace"][3][2],
                                              size=dots),
-                                 mode=graph_mode, name=sensors[Sensor.TIRE2.value]), row=row, col=1)
+                                 mode=graph_mode, name=sensors[Sensor.TIRE2]), row=row, col=1)
     # TIRE 3 PLOT
     if Sensor.TIRE3.value in avail:
-        legend.update({index_trace: sensors[Sensor.TIRE3.value]})
+        legend.update({index_trace: sensors[Sensor.TIRE3]})
         index_trace += 1
 
-        fig.add_trace(go.Scatter(x=all_frames[Sensor.TIRE3.value]["Timestamp"],
+        fig.add_trace(go.Scatter(x=all_frames[Sensor.TIRE3.value]["Time"],
                                  y=all_frames[Sensor.TIRE3.value]["Data"],
                                  marker=dict(color=themes[theme]["trace"][4][2],
                                              size=dots),
-                                 mode=graph_mode, name=sensors[Sensor.TIRE3.value]), row=row, col=1)
+                                 mode=graph_mode, name=sensors[Sensor.TIRE3]), row=row, col=1)
     # TIRE 4 PLOT
     if Sensor.TIRE4.value in avail:
-        legend.update({index_trace: sensors[Sensor.TIRE4.value]})
+        legend.update({index_trace: sensors[Sensor.TIRE4]})
         index_trace += 1
 
-        fig.add_trace(go.Scatter(x=all_frames[Sensor.TIRE4.value]["Timestamp"],
+        fig.add_trace(go.Scatter(x=all_frames[Sensor.TIRE4.value]["Time"],
                                  y=all_frames[Sensor.TIRE4.value]["Data"],
                                  marker=dict(color=themes[theme]["trace"][5][2],
                                              size=dots),
-                                 mode=graph_mode, name=sensors[Sensor.TIRE4.value]), row=row, col=1)
+                                 mode=graph_mode, name=sensors[Sensor.TIRE4]), row=row, col=1)
 
-    if Sensor.TIRE1.value in avail:
-        fig.update_yaxes(nticks=num_ticks, title_text="Tires", row=row, col=1)
-        fig.update_xaxes(visible=False, showticklabels=False)
 
     # PLOT 4: STEERING WHEEL -------------------------------------------------------------------------------------------
     if Sensor.ANGLE.value in avail:
         row += 1
-        legend.update({index_trace: sensors[Sensor.ANGLE.value]})
+        legend.update({index_trace: sensors[Sensor.ANGLE]})
         index_trace += 1
 
-        fig.add_trace(go.Scatter(x=all_frames[Sensor.ANGLE.value]["Timestamp"],
+        fig.add_trace(go.Scatter(x=all_frames[Sensor.ANGLE.value]["Time"],
                                  y=all_frames[Sensor.ANGLE.value]["Data"],
                                  marker=dict(color=themes[theme]["trace"][1][2]),
-                                 mode=graph_mode, name=sensors[Sensor.ANGLE.value]), row=row, col=1)
+                                 mode=graph_mode, name=sensors[Sensor.ANGLE]), row=row, col=1)
 
         fig.update_yaxes(nticks=num_ticks, title_text="Steering", row=row, col=1)
         fig.update_xaxes(visible=False, showticklabels=False)
 
+
     # PLOT 5: DAMPER POSITIONS -----------------------------------------------------------------------------------------
     if Sensor.DAMP1.value in avail:
         row += 1
-        legend.update({index_trace: sensors[Sensor.DAMP1.value]})
+        legend.update({index_trace: sensors[Sensor.DAMP1]})
         index_trace += 1
 
-        fig.add_trace(go.Scatter(x=all_frames[Sensor.DAMP1.value]["Timestamp"],
+        fig.add_trace(go.Scatter(x=all_frames[Sensor.DAMP1.value]["Time"],
                                  y=all_frames[Sensor.DAMP1.value]["Data"],
                                  marker=dict(color=themes[theme]["trace"][2][2],
                                              size=dots),
-                                 mode=graph_mode, name=sensors[Sensor.DAMP1.value]), row=row, col=1)
-    # DAMPER 2
-    if Sensor.DAMP2.value in avail:
-        legend.update({index_trace: sensors[Sensor.DAMP2.value]})
-        index_trace += 1
-
-        fig.add_trace(go.Scatter(x=all_frames[Sensor.DAMP2.value]["Timestamp"],
-                                 y=all_frames[Sensor.DAMP2.value]["Data"],
-                                 marker=dict(color=themes[theme]["trace"][3][2],
-                                             size=dots),
-                                 mode=graph_mode, name=sensors[Sensor.DAMP2.value]), row=row, col=1)
-    # DAMPER 3
-    if Sensor.DAMP3.value in avail:
-        legend.update({index_trace: sensors[Sensor.DAMP3.value]})
-        index_trace += 1
-
-        fig.add_trace(go.Scatter(x=all_frames[Sensor.DAMP3.value]["Timestamp"],
-                                 y=all_frames[Sensor.DAMP3.value]["Data"],
-                                 marker=dict(color=themes[theme]["trace"][4][2],
-                                             size=dots),
-                                 mode=graph_mode, name=sensors[Sensor.DAMP3.value]), row=row, col=1)
-    # DAMPER 4
-    if Sensor.DAMP4.value in avail:
-        legend.update({index_trace: sensors[Sensor.DAMP4.value]})
-        index_trace += 1
-
-        fig.add_trace(go.Scatter(x=all_frames[Sensor.DAMP4.value]["Timestamp"],
-                                 y=all_frames[Sensor.DAMP4.value]["Data"],
-                                 marker=dict(color=themes[theme]["trace"][5][2],
-                                             size=dots),
-                                 mode=graph_mode, name=sensors[Sensor.DAMP4.value]), row=row, col=1)
+                                 mode=graph_mode, name=sensors[Sensor.DAMP1]), row=row, col=1)
 
         fig.update_yaxes(nticks=num_ticks, title_text="Dampers", row=row, col=1)
         fig.update_xaxes(visible=False, showticklabels=False)
+
+    # DAMPER 2
+    if Sensor.DAMP2.value in avail:
+        legend.update({index_trace: sensors[Sensor.DAMP2]})
+        index_trace += 1
+
+        fig.add_trace(go.Scatter(x=all_frames[Sensor.DAMP2.value]["Time"],
+                                 y=all_frames[Sensor.DAMP2.value]["Data"],
+                                 marker=dict(color=themes[theme]["trace"][3][2],
+                                             size=dots),
+                                 mode=graph_mode, name=sensors[Sensor.DAMP2]), row=row, col=1)
+    # DAMPER 3
+    if Sensor.DAMP3.value in avail:
+        legend.update({index_trace: sensors[Sensor.DAMP3]})
+        index_trace += 1
+
+        fig.add_trace(go.Scatter(x=all_frames[Sensor.DAMP3.value]["Time"],
+                                 y=all_frames[Sensor.DAMP3.value]["Data"],
+                                 marker=dict(color=themes[theme]["trace"][4][2],
+                                             size=dots),
+                                 mode=graph_mode, name=sensors[Sensor.DAMP3]), row=row, col=1)
+    # DAMPER 4
+    if Sensor.DAMP4.value in avail:
+        legend.update({index_trace: sensors[Sensor.DAMP4]})
+        index_trace += 1
+
+        fig.add_trace(go.Scatter(x=all_frames[Sensor.DAMP4.value]["Time"],
+                                 y=all_frames[Sensor.DAMP4.value]["Data"],
+                                 marker=dict(color=themes[theme]["trace"][5][2],
+                                             size=dots),
+                                 mode=graph_mode, name=sensors[Sensor.DAMP4]), row=row, col=1)
+
 
     # PLOT 6: BATTERY TEMPERATURE --------------------------------------------------------------------------------------
     if Sensor.TEMP.value in avail:
         row += 1
 
-        legend.update({index_trace: sensors[Sensor.TEMP.value]})
+        legend.update({index_trace: sensors[Sensor.TEMP]})
         index_trace += 1
 
-        fig.add_trace(go.Scatter(x=all_frames[Sensor.TEMP.value]["Timestamp"],
+        fig.add_trace(go.Scatter(x=all_frames[Sensor.TEMP.value]["Time"],
                                  y=all_frames[Sensor.TEMP.value]["Data"],
                                  marker=dict(color=themes[theme]["trace"][1][2]),
-                                 mode=graph_mode, name=sensors[Sensor.TEMP.value]), row=row, col=1)
+                                 mode=graph_mode, name=sensors[Sensor.TEMP]), row=row, col=1)
 
         fig.update_yaxes(nticks=num_ticks, title_text="Battery", row=row, col=1)
         fig.update_xaxes(visible=False, showticklabels=False)
@@ -211,14 +208,14 @@ def display_dashboard(all_frames, theme="Dark", size="medium", avail=None, num_p
     # PLOT 7: ACCELEROMETER SENSORS ------------------------------------------------------------------------------------
     if Sensor.GFORCE.value in avail:
         row += 1
-        legend.update({index_trace: sensors[Sensor.GFORCE.value]})
+        legend.update({index_trace: sensors[Sensor.GFORCE]})
         index_trace += 1
 
         # TODO get fake g force data and remove the -2
-        fig.add_trace(go.Scatter(x=all_frames[Sensor.GFORCE.value-2]["Timestamp"],
+        fig.add_trace(go.Scatter(x=all_frames[Sensor.GFORCE.value-2]["Time"],
                                  y=all_frames[Sensor.GFORCE.value-2]["Data"],
                                  marker=dict(color=themes[theme]["trace"][1][2]),
-                                 mode=graph_mode, name=sensors[Sensor.GFORCE.value]), row=row, col=1)
+                                 mode=graph_mode, name=sensors[Sensor.GFORCE]), row=row, col=1)
 
         fig.update_yaxes(nticks=num_ticks, title_text="G-Force", row=row, col=1)
         fig.update_xaxes(visible=False, showticklabels=False)

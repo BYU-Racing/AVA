@@ -1,13 +1,14 @@
 import pandas as pd
-from bitstring import BitArray
 import numpy as np
+import os
+import warnings
 
 import Config
 from Config import *
 
 
 """
-Assumptions:
+Assumptions: OUTDATED
 1. Data is sent in IEEE 64 bit floating point binary representation
 2. Time is sent as number of milliseconds since the start
 3. We have control over how we encode data and timestamps
@@ -31,235 +32,221 @@ def readData(filename):
         filename (string): name of the file to read
     Returns:
         all_data (dictionary): data from the csv stored, converted, and parsed in a dictionary
-
-    CAN BUS Protocol
-    1. Start of frame:  (1 bit)     Always 1. Denotes the start of frame transmission
-    2. ID:              (11 bits)   A (unique) identifier which also represents the message priority
-    3. Stuff bit:       (1 bit)     A bit of the opposite polarity to maintain synchronisation
-    4. IDE:             (1 bit)     Identifier extension bit. Must be dominant (0)
-    5. Reserved bit     (1 bit)     Reserved bit. Must be dominant (0)
-    6. Message length:  (4 bits)    Number of bytes of data (0–8 bytes)
-    7. Timestamp:       (16 bits)   Timestamp (number of milliseconds from start)
-    7. Data field:      (8-64 bits) 1-8 bytes. Data to be transmitted (length in bytes dictated by DLC field)
-    8. CRC:             (15 bits)   Cyclic redundancy check
-    9. CRC delimiter:   (1 bit)     Must be recessive (1)
-    10. ACK slot:       (1 bit)     Transmitter sends recessive (1) and any receiver can assert a dominant (0)
-    11. ACK delimiter:  (1 bit)     Must be recessive (1)
-    12. End-of-frame:   (1 bit)     (EOF) Must be recessive (1)
-    13. IFS:            (3 bits)    Inter-frame spacing. Must be recessive (1)
-    Total Signal:       (65-121 bits)
-
-    Toy Signal
-    1. ID (11 bits)
-    2. Timestamp (16 bits)
-    3. Data (64 bits)
-    Total: 91 bits
     """
 
-    # read data
-    df = pd.read_csv(filename, sep=',', usecols=['ID', 'Timestamp', 'Data'])
-
-    # convert from binary to decimal
-    df['ID'] = convertOldID(df['ID'])
-    df['Timestamp'] = convertOldTime(df['Timestamp'])
-    df['Data'] = convertOldData(df['Data'])
+    # read data. idk why there's whitespace but that's how the data comes
+    df = pd.read_csv(filename, sep=',')
+    df.columns = df.columns.str.strip()
+    for col in df.columns:
+        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(pd.NA).astype('Int64')
 
     # split data into separate sensors
     all_data = {}
-    for i in range(len(sensors)):
-        all_data.update({i: df[df["ID"] == sensors[i]]})
+    for sensor_id in Sensor:
+        key = sensor_id.value
+        if key in df['ID'].unique():
+            all_data[key] = df[df["ID"] == key]
+            all_data[key].loc[:, 'Time'] = convertTime(all_data[key]['Time'])
 
-    # return all the data in the csv
-    return all_data
+            if key == Sensor.SWITCH.value or key == Sensor.LIGHT.value:
+                # this just returns the data as is
+                all_data[key].loc[:, 'Data'] = convertRawData(all_data[key]['Data0'])
+            else:
+                is_throttle = key == Sensor.THROT.value
+                all_data[key].loc[:, 'Data'] = convertAnalog(all_data[key]['Data0'], all_data[key]['Data1'], is_throttle)
 
+            # remove all columns except for Time and Data
+            all_data[key] = all_data[key][['Time', 'Data']]
+            print("\n\nSensor", key, "Data")
+            print(all_data[key].describe())
 
-def readRealData(filename):
-    """
-    Read data from a csv file 'filename' into a dictionary
-    Parameters:
-        filename (string): name of the file to read
-    Returns:
-        all_data (dictionary): data from the csv stored, converted, and parsed in a dictionary
-    """
-    # read data
-    df = pd.read_csv(filename, sep=',', usecols=['ID', 'Timestamp', 'Data'])
-
-    # convert from binary to decimal
-    df['ID'] = convertOldID(df['ID'])
-    df['Timestamp'] = convertOldTime(df['Timestamp'])
-    df['Data'] = convertOldData(df['Data'])
-
-    # fill in missing data
-    df = df.fillna(method='ffill')
-    df = prepend_zeros(df)
-
-    # split data into separate sensors
-    all_data = {}
-    for i in range(len(sensors)):
-        all_data.update({i: df[df["ID"] == sensors[i]]})
-
-    # get the last timestamp
-    duration = 0
-    for id in df['ID'].unique():
-        # Get the subset of the input dataframe for this ID
-        id_df = df[df['ID'] == id]
-
-        # Find the last timestamp for this ID
-        last_timestamp = id_df['Timestamp'].max()
-        if duration < last_timestamp:
-            duration = last_timestamp
-
-    # return all the data in the csv
-    return all_data, duration / PARTITION
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return all_data
 
 
-def parseBits(signals):
-    """
-    Check a binary string to make sure it matches the CANBus format, then turn it into a dataframe
-    Parameters:
-        signals (list): list of strings of binary digits
-    Returns:
-        processed (dataframe): data parsed into rows and columns
-    """
-    protocol = [['Start of frame', 1],
-                ['ID', 11],
-                ['Stuff bit', 1],
-                ['IDE', 1],
-                ['Reserved bit', 1],
-                ['Message length', 4],
-                ['Timestamp', 16],
-                ['Data field', 64],
-                ['CRC', 15],
-                ['CRC delimiter', 1],
-                ['ACK slot', 1],
-                ['ACK delimiter', 1],
-                ['EOF', 1],
-                ['IFS', 3],
-                ['Total', 121], ]
+# def readRealData(filename):
+#     """
+#     Read data from a csv file 'filename' into a dictionary
+#     Parameters:
+#         filename (string): name of the file to read
+#     Returns:
+#         all_data (dictionary): data from the csv stored, converted, and parsed in a dictionary
+#     """
+#     # read data
+#     df = pd.read_csv(filename, sep=',', usecols=['ID', 'Timestamp', 'Data'])
+#
+#     # convert from binary to decimal
+#     df['ID'] = convertOldID(df['ID'])
+#     df['Timestamp'] = convertOldTime(df['Timestamp'])
+#     df['Data'] = convertOldData(df['Data'])
+#
+#     # fill in missing data
+#     df = df.fillna(method='ffill')
+#     df = prepend_zeros(df)
+#
+#     # split data into separate sensors
+#     all_data = {}
+#     for i in range(len(sensors)):
+#         all_data.update({i: df[df["ID"] == sensors[i]]})
+#
+#     # get the last timestamp
+#     duration = 0
+#     for id in df['ID'].unique():
+#         # Get the subset of the input dataframe for this ID
+#         id_df = df[df['ID'] == id]
+#
+#         # Find the last timestamp for this ID
+#         last_timestamp = id_df['Time'].max()
+#         if duration < last_timestamp:
+#             duration = last_timestamp
+#
+#     # return all the data in the csv
+#     return all_data, duration / PARTITION
 
-    processed = []
-    for signal in signals:
+# def parseBits(signals):
+#     """
+#     Check a binary string to make sure it matches the CANBus format, then turn it into a dataframe
+#     Parameters:
+#         signals (list): list of strings of binary digits
+#     Returns:
+#         processed (dataframe): data parsed into rows and columns
+#     """
+#     protocol = [['Start of frame', 1],
+#                 ['ID', 11],
+#                 ['Stuff bit', 1],
+#                 ['IDE', 1],
+#                 ['Reserved bit', 1],
+#                 ['Message length', 4],
+#                 ['Timestamp', 16],
+#                 ['Data field', 64],
+#                 ['CRC', 15],
+#                 ['CRC delimiter', 1],
+#                 ['ACK slot', 1],
+#                 ['ACK delimiter', 1],
+#                 ['EOF', 1],
+#                 ['IFS', 3],
+#                 ['Total', 121], ]
+#
+#     processed = []
+#     for signal in signals:
+#
+#         # check data type
+#         if type(signal) is not str:
+#             raise TypeError(f"Signal is not of type string. Instead received {type(signal)}."
+#                             f"\nSignal: {signal}")
+#
+#         # check signal length
+#         if len(signal) != protocol[-1][1]:
+#             raise ValueError(f"Signal is not the right length. Expected {protocol[-1][1]} but received {len(signal)}."
+#                              f"\nSignal: {signal}")
+#
+#         # create a list of signals divided into fields
+#         parsed = []
+#         for field in protocol[:-1]:
+#             parsed.append(signal[:field[1]])
+#             signal = signal[field[1]:]
+#         processed.append(parsed)
+#
+#     # return the full data frame
+#     return pd.DataFrame(processed)
 
-        # check data type
-        if type(signal) is not str:
-            raise TypeError(f"Signal is not of type string. Instead received {type(signal)}."
-                            f"\nSignal: {signal}")
-
-        # check signal length
-        if len(signal) != protocol[-1][1]:
-            raise ValueError(f"Signal is not the right length. Expected {protocol[-1][1]} but received {len(signal)}."
-                             f"\nSignal: {signal}")
-
-        # create a list of signals divided into fields
-        parsed = []
-        for field in protocol[:-1]:
-            parsed.append(signal[:field[1]])
-            signal = signal[field[1]:]
-        processed.append(parsed)
-
-    # return the full data frame
-    return pd.DataFrame(processed)
-
-
-def convertOldTime(timestamp):
-    """
-    Convert binary timestamp into human-readable text
-    Parameters:
-        timestamp (string or dataframe): time as a string of binary digits
-    Returns:
-        time (int or dataframe): formatted time
-    """
-    # case if parameter is a string
-    if type(timestamp) is str:
-        return int(str(timestamp), 2) / PARTITION
-
-    # case if parameter is a dataframe
-    return pd.DataFrame([int(str(time), 2) / PARTITION for time in timestamp])
+# def convertOldTime(timestamp):
+#     """
+#     Convert binary timestamp into human-readable text
+#     Parameters:
+#         timestamp (string or dataframe): time as a string of binary digits
+#     Returns:
+#         time (int or dataframe): formatted time
+#     """
+#     # case if parameter is a string
+#     if type(timestamp) is str:
+#         return int(str(timestamp), 2) / PARTITION
+#
+#     # case if parameter is a dataframe
+#     return pd.DataFrame([int(str(time), 2) / PARTITION for time in timestamp])
 
 def convertTime(timestamp):
     """
     Read in timestamp in milliseconds and convert to seconds
     Parameters:
-        timestamp (string or dataframe): time as a string decimal digits
+        timestamp (int or dataframe): time as a string decimal digits
     Returns:
-        time (int or dataframe): formatted time
+        time (float or dataframe): formatted time in seconds
     """
-    # case if parameter is a string
-    if type(timestamp) is str:
-        return float(timestamp) / PARTITION
+    return timestamp / PARTITION
 
-    # case if parameter is a dataframe
-    return pd.DataFrame([float(time) / PARTITION for time in timestamp])
+# def convertOldID(id_sensor):
+#     """
+#     Convert a binary ID into an integer
+#     Parameters:
+#         id_sensor (string or dataframe of strings): sensor id in binary
+#     Returns:
+#         id (int or dataframe of ints): sensor id in decimal
+#     """
+#     # case if parameter is a string
+#     if type(id_sensor) is str:
+#         return sensors[int(str(id_sensor), 2)]
+#
+#     # case if parameter is a dataframe
+#     return pd.DataFrame([sensors[int(str(i), 2)] for i in id_sensor])
+
+# def convertID(id_sensor):
+#     """
+#     Read in sensor ID and convert to a string name
+#     Parameters:
+#         id_sensor (string or dataframe of strings): sensor id as an integer
+#     Returns:
+#         id (string or dataframe of strings): sensor name
+#     """
+#     # case if parameter is a string
+#     if type(id_sensor) is str:
+#         return sensors[int(id_sensor)]
+#
+#     # case if parameter is a dataframe
+#     return pd.DataFrame([sensors[int(i)] for i in id_sensor])
 
 
-def convertOldID(id_sensor):
+# def convertOldData(data):
+#     """
+#     Convert binary data into a float
+#     Parameters:
+#         data (string or dataframe of strings): data in binary as a string
+#     Returns:
+#         data (int or dataframe of ints): data in decimal
+#     """
+#     # case if parameter is a string
+#     if type(data) is str:
+#         return BitArray(bin=str(data)).float
+#
+#     # case if parameter is a dataframe
+#     return pd.DataFrame([BitArray(bin=str(d)).float for d in data])
+
+def convertAnalog(low_byte, high_byte, throttle=False):
     """
-    Convert a binary ID into an integer
+    Read in 2 columns analog data and convert to a decimal
     Parameters:
-        id_sensor (string or dataframe of strings): sensor id in binary
-    Returns:
-        id (int or dataframe of ints): sensor id in decimal
-    """
-    # case if parameter is a string
-    if type(id_sensor) is str:
-        return sensors[int(str(id_sensor), 2)]
-
-    # case if parameter is a dataframe
-    return pd.DataFrame([sensors[int(str(i), 2)] for i in id_sensor])
-
-def convertID(id_sensor):
-    """
-    Read in sensor ID and convert to a string name
-    Parameters:
-        id_sensor (string or dataframe of strings): sensor id as an integer
-    Returns:
-        id (string or dataframe of strings): sensor name
-    """
-    # case if parameter is a string
-    if type(id_sensor) is str:
-        return sensors[int(id_sensor)]
-
-    # case if parameter is a dataframe
-    return pd.DataFrame([sensors[int(i)] for i in id_sensor])
-
-
-def convertOldData(data):
-    """
-    Convert binary data into a float
-    Parameters:
-        data (string or dataframe of strings): data in binary as a string
+        low_byte (int or dataframe of ints): low byte of throttle data
+        high_byte (int or dataframe of ints): high byte of throttle data
+        throttle (bool): whether the data is throttle or analog
     Returns:
         data (int or dataframe of ints): data in decimal
     """
-    # case if parameter is a string
-    if type(data) is str:
-        return BitArray(bin=str(data)).float
+    alpha = 255 if throttle else 100
+    if throttle:
+        return low_byte + high_byte * alpha
+    return high_byte + low_byte * alpha
 
-    # case if parameter is a dataframe
-    return pd.DataFrame([BitArray(bin=str(d)).float for d in data])
 
-def convertData(data, sensor_id):
+def convertRawData(data):
     """
-    Read in sensor data and convert to a float
+    Read in 1 column sensor data and convert to a float
     Parameters:
         data (string or dataframe of strings): data in decimal as a string
-        sensor_id (int): the id of the sensor
     Returns:
         data (float or dataframe of floats): data in decimal
     """
-    # get the data modifiers for the sensor
-    weight = weights["W_" + sensor_names[sensor_id]]
-    bias = biases["B_" + sensor_names[sensor_id]]
-    maxi = maximums["X_" + sensor_names[sensor_id]]
-    mini = minimums["N_" + sensor_names[sensor_id]]
-    slope = weight / (maxi - mini)
-
-    # case if parameter is a string
-    if type(data) is str:
-        return (float(data) - mini) * slope + bias
-
-    # case if parameter is a dataframe
-    return pd.DataFrame((np.array([float(d) for d in data]) - mini) * slope + bias)
+    return data
 
 
 def convert_position(speed, time, angle):
@@ -305,33 +292,49 @@ def convert_sensor_data(sensor, data):
     return (data - Config.biases[bias]) * Config.weights[weight]
 
 
-def prepend_zeros(df):
-    # Create a new empty dataframe to hold the output
-    output_df = pd.DataFrame()
+# def prepend_zeros(df):
+#     # Create a new empty dataframe to hold the output
+#     output_df = pd.DataFrame()
+#
+#     # Loop over each unique ID in the input dataframe
+#     for id in df['ID'].unique():
+#         # Get the subset of the input dataframe for this ID
+#         id_df = df[df['ID'] == id]
+#
+#         # Find the first timestamp for this ID
+#         first_timestamp = id_df['Time'].min()
+#
+#         # Create a new dataframe with rows for every millisecond between
+#         # zero and the first timestamp for this ID
+#         new_rows = []
+#         for timestamp in range(0, first_timestamp + 1):
+#             new_rows.append({'ID': id, 'Time': timestamp, 'Data': 0})
+#         new_df = pd.DataFrame(new_rows)
+#
+#         # Append the original dataframe to the new dataframe and fill any
+#         # missing values with zeros
+#         merged_df = pd.merge(new_df, id_df, on=['ID', 'Time'], how='outer').fillna(0)
+#
+#         # Add the merged dataframe to the output dataframe
+#         output_df = output_df.append(merged_df)
+#
+#     # Sort the output dataframe by ID and timestamp
+#     output_df = output_df.sort_values(['Timestamp', 'ID'])
+#
+#     return output_df
 
-    # Loop over each unique ID in the input dataframe
-    for id in df['ID'].unique():
-        # Get the subset of the input dataframe for this ID
-        id_df = df[df['ID'] == id]
 
-        # Find the first timestamp for this ID
-        first_timestamp = id_df['Timestamp'].min()
+def get_latest_data():
+    """
+    Find the highest numbered file in the data folder
 
-        # Create a new dataframe with rows for every millisecond between
-        # zero and the first timestamp for this ID
-        new_rows = []
-        for timestamp in range(0, first_timestamp + 1):
-            new_rows.append({'ID': id, 'Timestamp': timestamp, 'Data': 0})
-        new_df = pd.DataFrame(new_rows)
+    Returns:
+        latest_file (string): the name of the latest file
+    """
+    # find all files that only have numbers in their name
+    files = os.listdir(Config.DATA_PATH)
+    files = [f for f in files if f.split(".")[0].isdigit()]
 
-        # Append the original dataframe to the new dataframe and fill any
-        # missing values with zeros
-        merged_df = pd.merge(new_df, id_df, on=['ID', 'Timestamp'], how='outer').fillna(0)
-
-        # Add the merged dataframe to the output dataframe
-        output_df = output_df.append(merged_df)
-
-    # Sort the output dataframe by ID and timestamp
-    output_df = output_df.sort_values(['Timestamp', 'ID'])
-
-    return output_df
+    # sort the files by number lowest to highest and return the last file
+    files.sort(key=lambda x: int(x.split(".")[0]))
+    return DATA_PATH + files[-1]

@@ -1,11 +1,10 @@
 from dash import Dash, dcc, html
 from dash.dependencies import Input, Output
-import plotly.express as px
 
-import webbrowser
 import cProfile
 
 from Plots import *
+from Converter import get_latest_data
 from Config import themes, Sensor
 
 # TODO play button
@@ -14,16 +13,17 @@ from Config import themes, Sensor
 app = Dash(__name__)
 
 # load data
-# all_sensors, duration = readData(SOURCE)
-all_sensors = readData(SOURCE)
+source = get_latest_data() if REAL_DATA else DEFAULT_SOURCE
+all_sensors = readData(source)
 
 # initialize local starting variables
 duration = 5
 ready = False
-view = THEME[1]
+view = THEME[2]
 
 # construct initial plots
-fig = display_dashboard(all_sensors, theme=view)
+frame_ids = [sid for sid in all_sensors.keys()]
+fig = display_dashboard(all_sensors, theme=view, avail=frame_ids)
 spd = speedometer(0, theme=view)
 pdl = pedals(theme=view)
 
@@ -224,8 +224,7 @@ def select_plots(n_click0, n_click1, n_click2, n_click3, n_click4, n_click5, n_c
     avail = []
     for i in range(len(on)):
         if i == 0 and on[i] == 0:
-            avail.append(Sensor.ACC1.value)
-            avail.append(Sensor.ACC2.value)
+            avail.append(Sensor.THROT.value)
         elif i == 1 and on[i] == 0:
             avail.append(Sensor.BRAKE.value)
         elif i == 2 and on[i] == 0:
@@ -368,7 +367,7 @@ def update_output_div(input_value, size):
 
 
 def do_the_thing():
-    app.run_server(debug=True)
+    app.run_server(debug=False)
 
 if __name__ == '__main__':
     # webbrowser.get(CHROME).open(LOCAL_HOST)

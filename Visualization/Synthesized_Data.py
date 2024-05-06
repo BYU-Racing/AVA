@@ -48,10 +48,8 @@ if __name__ == "__main__":
 
     a1 = lambda x: 1.1*x
     a2 = lambda x: x
-    dfa1 = dataFrame(a1, Sensor.ACC1.value, interval)
-    dfa2 = dataFrame(a2, Sensor.ACC2.value, interval)
-    dfa1.to_csv('ACC1.csv')
-    dfa2.to_csv('ACC2.csv')
+    dfa1 = dataFrame(a1, Sensor.THROT.value, interval)
+    dfa1.to_csv('THROT.csv')
 
     br = lambda x: np.cos(x/1000) + np.cos(3*x/1000) + 2
     dfbr = dataFrame(br, Sensor.BRAKE.value, interval)
@@ -99,7 +97,7 @@ if __name__ == "__main__":
     dfl = dataFrame(l, Sensor.LIGHT.value, interval)
     dfl.to_csv('LIGHT.csv')
 
-    dfMaster = pd.concat([dfa1, dfa2, dfbr, dfang, dfsw, dft1, dft2, dft3, dft4, dfd1, dfd2, dfd3, dfd4, dfte, dfl], axis=0)
+    dfMaster = pd.concat([dfa1, dfbr, dfang, dfsw, dft1, dft2, dft3, dft4, dfd1, dfd2, dfd3, dfd4, dfte, dfl], axis=0)
     dfMaster = dfMaster.sort_values(by=['Timestamp', 'ID'])
     dfMaster.to_csv('Master.csv')
 
