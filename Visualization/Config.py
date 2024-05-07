@@ -3,7 +3,9 @@ from enum import Enum
 
 MPS = 0.000278
 PARTITION = 1000.
+S2MIN = 60
 THEME = ["Arduino", "Jarvis", "Daylight"]
+SELECTED_THEME = THEME[2]
 SHOW_INSTANTS = False
 
 REAL_DATA = True
@@ -30,6 +32,8 @@ class Sensor(Enum):
     TEMP = 16
     LIGHT = 17
     GFORCE = 18
+    SPEED = 19
+    GPS = 20
 
 
 # convert each sensor index to its abbreviated name
@@ -49,6 +53,8 @@ sensor_names = {
     Sensor.TEMP: "TEMP",
     Sensor.LIGHT: "LIGHT",
     Sensor.GFORCE: "GFORCE",
+    Sensor.SPEED: "SPEED",
+    Sensor.GPS: "GPS",
 }
 
 # convert an index to a sensor display name
@@ -68,6 +74,8 @@ sensors = {
     Sensor.TEMP: 'Battery Temperature',
     Sensor.LIGHT: 'Rain Light',
     Sensor.GFORCE: 'G-Force',
+    Sensor.SPEED: 'Vehicle Speed',
+    Sensor.GPS: 'GPS Position',
 }
 
 

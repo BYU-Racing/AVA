@@ -14,16 +14,17 @@ app = Dash(__name__)
 
 # load data
 source = get_latest_data() if REAL_DATA else DEFAULT_SOURCE
-all_sensors = readData(source)
+all_sensors, start_time, end_time = readData(source, return_times=True)
 
 # initialize local starting variables
-duration = 5
+duration = end_time + start_time
 ready = False
-view = THEME[2]
+view = SELECTED_THEME
 
 # construct initial plots
 frame_ids = [sid for sid in all_sensors.keys()]
-fig = display_dashboard(all_sensors, theme=view, avail=frame_ids)
+print(frame_ids)
+fig = display_dashboard(all_sensors, theme=view, avail=frame_ids, num_plots=3)
 spd = speedometer(0, theme=view)
 pdl = pedals(theme=view)
 
@@ -47,6 +48,57 @@ button_style = [  # selected
      'border': "1.5px solid " + themes[view]["color"][2][2],
      },
 ]
+
+# CONSTRUCT INSTANT GRAPHS
+instant_graphs = []
+# speedometer
+if Sensor.SPEED.value in frame_ids:
+    instant_graphs.append(
+        dcc.Graph(
+            id='speedometer',
+            figure=spd,
+            style={'width': '50vh', 'height': '40vh', 'display': 'inline-block', }
+        ))
+
+# bar chart for brake and accelerator
+if Sensor.BRAKE.value in frame_ids or Sensor.THROT.value in frame_ids:
+    instant_graphs.append(
+        dcc.Graph(
+            id='pedals',
+            figure=pdl,
+            style={'width': '50vh', 'height': '40vh', 'display': 'inline-block', }
+        ))
+# accelerometer g force
+if Sensor.GFORCE.value in frame_ids:
+    instant_graphs.append(
+        dcc.Graph(id='g-force',
+                  config={'displayModeBar': False},
+                  style={'width': '50vh', 'height': '40vh', 'display': 'inline-block', }))
+# steering wheel
+if Sensor.ANGLE.value in frame_ids:
+    instant_graphs.append(
+        dcc.Graph(id='steering-wheel',
+                  config={'displayModeBar': False},
+                  style={'width': '50vh', 'height': '40vh', 'display': 'inline-block', }))
+
+# track position
+if Sensor.GPS.value in frame_ids:
+    instant_graphs.append(
+        dcc.Graph(id='track-position',
+                  config={'displayModeBar': False},
+                  style={'width': '50vh', 'height': '40vh', 'display': 'inline-block', }))
+
+# additional text data
+instant_graphs.append(
+        html.P(id='output-values', children="",
+               style={'width': '50vh', 'height': '40vh', 'display': 'inline-block',
+                      'margin': '10px',
+                      'color': themes[view]["color"][2][2],
+                      'fontFamily': themes[view]["font"]["p"],
+                      'fontSize': themes[view]["size"]["small"] + "px",
+                      'verticalAlign': 'top', 'whiteSpace': 'pre-line'}))
+
+
 
 # DISPLAY DASHBOARD
 app.layout = html.Div([
@@ -78,7 +130,7 @@ app.layout = html.Div([
                 id='dashboard-title'),
 
         # tab buttons
-        html.Button('Accelerator', id='acc-button', n_clicks=0,
+        html.Button('Throttle', id='acc-button', n_clicks=0,
                     style=button_style[0]),
         html.Button('Brake', id='brk-button', n_clicks=0,
                     style=button_style[0]),
@@ -116,12 +168,12 @@ app.layout = html.Div([
 
     # slider to select and view instantaneous values
     html.Div([
-        dcc.Slider(id='time-slider', min=0, max=duration, step=1 / PARTITION, value=0,
+        dcc.Slider(id='time-slider', min=start_time, max=end_time, step=1 / PARTITION, value=0,
                    marks={0: {'label': "0",
                               'style': {'color': themes[view]["color"][2][2]}},
-                          duration / 2: {'label': str(duration / 2),
+                          duration / 2: {'label': str(round(duration / 2, 1)),
                                          'style': {'color': themes[view]["color"][2][2]}},
-                          duration: {'label': str(duration),
+                          end_time: {'label': str(round(end_time, 1)),
                                      'style': {'color': themes[view]["color"][2][2]}}
                           },
                    updatemode='drag',
@@ -132,46 +184,7 @@ app.layout = html.Div([
                   'fontSize': themes[view]["size"]["small"] + "px",},
     ),
 
-    html.Div([
-
-        # speedometer
-        dcc.Graph(
-            id='speedometer',
-            figure=spd,
-            style={'width': '50vh', 'height': '40vh', 'display': 'inline-block', }
-        ),
-
-        # bar chart for brake and accelerator
-        dcc.Graph(
-            id='pedals',
-            figure=pdl,
-            style={'width': '50vh', 'height': '40vh', 'display': 'inline-block', }
-        ),
-
-        # accelerometer g force
-        dcc.Graph(id='g-force',
-                  config={'displayModeBar': False},
-                  style={'width': '50vh', 'height': '40vh', 'display': 'inline-block', }),
-
-        # steering wheel
-        dcc.Graph(id='steering-wheel',
-                  config={'displayModeBar': False},
-                  style={'width': '50vh', 'height': '40vh', 'display': 'inline-block', }),
-
-        # track position
-        dcc.Graph(id='track-position',
-                  config={'displayModeBar': False},
-                  style={'width': '50vh', 'height': '40vh', 'display': 'inline-block', }),
-
-        # additional text data
-        html.P(id='output-values', children="",
-               style={'width': '50vh', 'height': '40vh', 'display': 'inline-block',
-                      'margin': '10px',
-                      'color': themes[view]["color"][2][2],
-                      'fontFamily': themes[view]["font"]["p"],
-                      'fontSize': themes[view]["size"]["small"] + "px",
-                      'verticalAlign': 'top', 'whiteSpace': 'pre-line'})
-    ])
+    html.Div(instant_graphs)
 
 ],  # overall styling
     style={'backgroundColor': themes[view]["color"][0][2],
@@ -222,26 +235,54 @@ def select_plots(n_click0, n_click1, n_click2, n_click3, n_click4, n_click5, n_c
 
     # build available list based on which subplots to display
     avail = []
+    show_count = 0
     for i in range(len(on)):
-        if i == 0 and on[i] == 0:
+        if i == 0 and on[i] == 0 and Sensor.THROT.value in frame_ids:
             avail.append(Sensor.THROT.value)
-        elif i == 1 and on[i] == 0:
+            show_count += 1
+        elif i == 1 and on[i] == 0 and Sensor.BRAKE.value in frame_ids:
             avail.append(Sensor.BRAKE.value)
+            show_count += 1
         elif i == 2 and on[i] == 0:
-            avail.append(Sensor.TIRE1.value)
-            avail.append(Sensor.TIRE2.value)
-            avail.append(Sensor.TIRE3.value)
-            avail.append(Sensor.TIRE4.value)
-        elif i == 3 and on[i] == 0:
+            tire_count = 0
+            if Sensor.TIRE1.value in frame_ids:
+                avail.append(Sensor.TIRE1.value)
+                tire_count += 1
+            if Sensor.TIRE2.value in frame_ids:
+                avail.append(Sensor.TIRE2.value)
+                tire_count += 1
+            if Sensor.TIRE3.value in frame_ids:
+                avail.append(Sensor.TIRE3.value)
+                tire_count += 1
+            if Sensor.TIRE4.value in frame_ids:
+                avail.append(Sensor.TIRE4.value)
+                tire_count += 1
+            if tire_count > 0:
+                show_count += 1
+        elif i == 3 and on[i] == 0 and Sensor.ANGLE.value in frame_ids:
+            show_count += 1
             avail.append(Sensor.ANGLE.value)
         elif i == 4 and on[i] == 0:
-            avail.append(Sensor.DAMP1.value)
-            avail.append(Sensor.DAMP2.value)
-            avail.append(Sensor.DAMP3.value)
-            avail.append(Sensor.DAMP4.value)
-        elif i == 5 and on[i] == 0:
+            damp_count = 0
+            if Sensor.DAMP1.value in frame_ids:
+                avail.append(Sensor.DAMP1.value)
+                damp_count += 1
+            if Sensor.DAMP2.value in frame_ids:
+                avail.append(Sensor.DAMP2.value)
+                damp_count += 1
+            if Sensor.DAMP3.value in frame_ids:
+                avail.append(Sensor.DAMP3.value)
+                damp_count += 1
+            if Sensor.DAMP4.value in frame_ids:
+                avail.append(Sensor.DAMP4.value)
+                damp_count += 1
+            if damp_count > 0:
+                show_count += 1
+        elif i == 5 and on[i] == 0 and Sensor.TEMP.value in frame_ids:
+            show_count += 1
             avail.append(Sensor.TEMP.value)
-        elif i == 6 and on[i] == 0:
+        elif i == 6 and on[i] == 0 and Sensor.GFORCE.value in frame_ids:
+            show_count += 1
             avail.append(Sensor.GFORCE.value)
 
     # built output list
@@ -249,14 +290,14 @@ def select_plots(n_click0, n_click1, n_click2, n_click3, n_click4, n_click5, n_c
 
     # resize the additional charts based on size input
     if size == "Expanded":
-        tall = '120vh'
+        tall = '90vh'
         resize = "small"
     else:
         tall = '60vh'
         resize = "mini"
 
     # rebuild the main plot with the new availability list
-    new_plot = display_dashboard(all_sensors, theme=view, size=resize, avail=avail, num_plots=len(on) - sum(on))
+    new_plot = display_dashboard(all_sensors, theme=view, size=resize, avail=avail, num_plots=show_count)
     buttons.append(new_plot)
 
     reformat = {'width': '100%', 'height': tall, 'margin': '0px'}

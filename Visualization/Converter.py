@@ -25,43 +25,60 @@ Corrections #TODO
 """
 
 
-def readData(filename):
+def readData(filename, return_times=False, verbose=False):
     """
     Read data from a csv file filename into a dictionary
     Parameters:
         filename (string): name of the file to read
+        return_times (bool): whether to return the start and end times
+        verbose (bool): whether to print out the data
     Returns:
         all_data (dictionary): data from the csv stored, converted, and parsed in a dictionary
+                               maps sensor id (int) to a pandas dataframe with columns 'Time' and 'Data'
+        start_time (float): start time of the data if requested
+        end_time (float): end time of the data if requested
     """
-
-    # read data. idk why there's whitespace but that's how the data comes
-    df = pd.read_csv(filename, sep=',')
-    df.columns = df.columns.str.strip()
-    for col in df.columns:
-        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(pd.NA).astype('Int64')
-
-    # split data into separate sensors
-    all_data = {}
-    for sensor_id in Sensor:
-        key = sensor_id.value
-        if key in df['ID'].unique():
-            all_data[key] = df[df["ID"] == key]
-            all_data[key].loc[:, 'Time'] = convertTime(all_data[key]['Time'])
-
-            if key == Sensor.SWITCH.value or key == Sensor.LIGHT.value:
-                # this just returns the data as is
-                all_data[key].loc[:, 'Data'] = convertRawData(all_data[key]['Data0'])
-            else:
-                is_throttle = key == Sensor.THROT.value
-                all_data[key].loc[:, 'Data'] = convertAnalog(all_data[key]['Data0'], all_data[key]['Data1'], is_throttle)
-
-            # remove all columns except for Time and Data
-            all_data[key] = all_data[key][['Time', 'Data']]
-            print("\n\nSensor", key, "Data")
-            print(all_data[key].describe())
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
+
+        # read data. idk why there's whitespace but that's how the data comes
+        df = pd.read_csv(filename, sep=',')
+        df.columns = df.columns.str.strip()
+        for col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(pd.NA).astype('Int64')
+
+        # get the first and last timestamps
+        if return_times:
+            start_time = df['Time'][0] / PARTITION / S2MIN
+            end_time = df['Time'][len(df['Time']) - 1] / PARTITION / S2MIN
+            if verbose:
+                print("Start Time:", start_time, "minutes")
+                print("End Time:", end_time, "minutes")
+
+        # split data into separate sensors
+        all_data = {}
+        for sensor_id in Sensor:
+            key = sensor_id.value
+            if key in df['ID'].unique():
+                all_data[key] = df[df["ID"] == key]
+                all_data[key].loc[:, 'Time'] = convertTime(all_data[key]['Time'])
+
+                if key == Sensor.SWITCH.value or key == Sensor.LIGHT.value:
+                    # this just returns the data as is
+                    all_data[key].loc[:, 'Data'] = convertRawData(all_data[key]['Data0'])
+                else:
+                    is_throttle = key == Sensor.THROT.value
+                    all_data[key].loc[:, 'Data'] = convertAnalog(all_data[key]['Data0'],
+                                                                 all_data[key]['Data1'],
+                                                                 is_throttle)
+                # ID and other data columns are now irrelevant and can be dropped
+                all_data[key] = all_data[key][['Time', 'Data']]
+                if verbose:
+                    print("\n\nSensor", key, "Data")
+                    print(all_data[key].describe())
+        if return_times:
+            return all_data, start_time, end_time
         return all_data
 
 

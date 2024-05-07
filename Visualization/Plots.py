@@ -35,6 +35,7 @@ def display_dashboard(all_frames, theme="Jarvis", size="medium", avail=None, num
     """
     # set default availability
     if avail is None:
+        print("No sensors selected, setting all to available")
         avail = list(range(len(Config.sensor_names)))
 
     # initialize figure with subplots
@@ -83,6 +84,10 @@ def display_dashboard(all_frames, theme="Jarvis", size="medium", avail=None, num
 
     # PLOT 3: TIRE SPEEDS ----------------------------------------------------------------------------------------------
     if Sensor.TIRE1.value in avail:
+        print("trying to plot tire 1")
+        print(Sensor.TIRE1.value)
+        print(avail)
+        print()
         row += 1
         legend.update({index_trace: sensors[Sensor.TIRE1]})
         index_trace += 1
