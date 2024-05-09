@@ -23,7 +23,6 @@ view = SELECTED_THEME
 
 # construct initial plots
 frame_ids = [sid for sid in all_sensors.keys()]
-print(frame_ids)
 fig = display_dashboard(all_sensors, theme=view, avail=frame_ids, num_plots=3)
 spd = speedometer(0, theme=view)
 pdl = pedals(theme=view)
@@ -51,6 +50,7 @@ button_style = [  # selected
 
 # CONSTRUCT INSTANT GRAPHS
 instant_graphs = []
+call_back_ids = []
 # speedometer
 if Sensor.SPEED.value in frame_ids:
     instant_graphs.append(
@@ -59,6 +59,7 @@ if Sensor.SPEED.value in frame_ids:
             figure=spd,
             style={'width': '50vh', 'height': '40vh', 'display': 'inline-block', }
         ))
+    call_back_ids.append('speedometer')
 
 # bar chart for brake and accelerator
 if Sensor.BRAKE.value in frame_ids or Sensor.THROT.value in frame_ids:
@@ -68,18 +69,21 @@ if Sensor.BRAKE.value in frame_ids or Sensor.THROT.value in frame_ids:
             figure=pdl,
             style={'width': '50vh', 'height': '40vh', 'display': 'inline-block', }
         ))
+    call_back_ids.append('pedals')
 # accelerometer g force
 if Sensor.GFORCE.value in frame_ids:
     instant_graphs.append(
         dcc.Graph(id='g-force',
                   config={'displayModeBar': False},
                   style={'width': '50vh', 'height': '40vh', 'display': 'inline-block', }))
+    call_back_ids.append('g-force')
 # steering wheel
 if Sensor.ANGLE.value in frame_ids:
     instant_graphs.append(
         dcc.Graph(id='steering-wheel',
                   config={'displayModeBar': False},
                   style={'width': '50vh', 'height': '40vh', 'display': 'inline-block', }))
+    call_back_ids.append('steering-wheel')
 
 # track position
 if Sensor.GPS.value in frame_ids:
@@ -87,6 +91,7 @@ if Sensor.GPS.value in frame_ids:
         dcc.Graph(id='track-position',
                   config={'displayModeBar': False},
                   style={'width': '50vh', 'height': '40vh', 'display': 'inline-block', }))
+    call_back_ids.append('track-position')
 
 # additional text data
 instant_graphs.append(
@@ -97,6 +102,8 @@ instant_graphs.append(
                       'fontFamily': themes[view]["font"]["p"],
                       'fontSize': themes[view]["size"]["small"] + "px",
                       'verticalAlign': 'top', 'whiteSpace': 'pre-line'}))
+
+
 
 
 
@@ -311,17 +318,8 @@ def select_plots(n_click0, n_click1, n_click2, n_click3, n_click4, n_click5, n_c
 # SELECT TIME SLIDER AND DISPLAY MODE RADIO BUTTONS
 @app.callback(
     Output(component_id='output-values', component_property='children'),
-    Output(component_id='speedometer', component_property='figure'),
-    Output(component_id='pedals', component_property='figure'),
-    Output(component_id='steering-wheel', component_property='figure'),
-    Output(component_id='track-position', component_property='figure'),
-    Output(component_id='g-force', component_property='figure'),
-    Output(component_id='speedometer', component_property='style'),
-    Output(component_id='pedals', component_property='style'),
-    Output(component_id='steering-wheel', component_property='style'),
-    Output(component_id='track-position', component_property='style'),
-    Output(component_id='g-force', component_property='style'),
-
+    *[Output(component_id=call_id, component_property='figure') for call_id in call_back_ids],
+    *[Output(component_id=call_id, component_property='style') for call_id in call_back_ids],
     Input(component_id='time-slider', component_property='value'),
     Input(component_id='size_radio', component_property='value'),
 )
@@ -352,24 +350,31 @@ def update_output_div(input_value, size):
     else:
         # get the values of each subplot at the input time
         values = []
+        out_index = 0
         for i in range(len(legend)):
             trace = fig['data'][i]
-            value = round(trace['y'][int(time * PARTITION)], 4) if time * PARTITION < len(trace['y']) else None
+            # find the index where trace['x'] is closest to the input time
+            time_index = np.abs(np.array(trace['x']/60) - time).argmin()
+            out_index = trace['x'][time_index]
+            value = round(trace['y'][time_index], 4)
             values.append(f'{legend[i]}: {value}')
 
         # compute the average speed to display
-        speed = np.mean([float(values[i].split(":")[1][1:]) for i in range(3, 7)])
+        speed = np.mean([float(values[i].split(":")[1][1:]) for i in range(3, 7)]) if Sensor.SPEED.value in frame_ids else 0
 
         # get brake and accelerator values
-        brake = float(values[2].split(":")[1][1:])
-        acceleration = np.mean([float(values[i].split(":")[1][1:]) for i in range(0, 2)])
+        brake = float(values[1].split(":")[1][1:]) / BRAKE_MAX if Sensor.BRAKE.value in frame_ids else 0
+        acceleration = float(values[0].split(":")[1][1:]) / THROT_MAX if Sensor.THROT.value in frame_ids else 0
 
         # compute the instantaneous g-force to display
         lat_g = brake
         lon_g = speed
 
         # display extra values
-        extra = "Time: " + str(input_value) + "\n\n" + '\n'.join(values[-5:])
+        minute = int(time)
+        second = int((time - minute) * 60)
+        placeholder = "0" if second < 10 else ""
+        extra = f"Time = {minute}:{placeholder}{second}" + " | " + str(out_index) + "s\n\n" + '\n'.join(values[-5:])
         """id='output-values',
         style={'width': '50vh', 'height': '40vh', 'display': 'inline-block',
           'color': themes[view]["color"][2][2],
@@ -379,7 +384,7 @@ def update_output_div(input_value, size):
         )"""
 
         # get steering angle
-        angle = float(values[9].split(":")[1][1:])
+        angle = float(values[9].split(":")[1][1:]) if Sensor.ANGLE.value in frame_ids else 0
 
         # update sizes
         if size == "Expanded":
@@ -398,13 +403,23 @@ def update_output_div(input_value, size):
         if not ready:
             print("AVA is ready")
             ready = True
-        return extra, \
-               speedometer(speed, maxim=2, theme=view, size=resize), \
-               pedals(brake, acceleration, maxim=5, theme=view, size=resize), \
-               steering(angle=angle, theme=view, size=resize), \
-               track(time_stamp=input_value, theme=view, size=resize), \
-               g_force(lat_g, lon_g, theme=view, size=resize), \
-               update, update, update, update, update
+
+        final_tuple = (extra,)
+        if Sensor.SPEED.value in frame_ids:
+            final_tuple += (speedometer(speed, maxim=2, theme=view, size=resize),)
+        if Sensor.BRAKE.value in frame_ids and Sensor.THROT.value in frame_ids:
+            final_tuple += (pedals(brake, acceleration, maxim=UNIT_PERCENT, theme=view, size=resize),)
+        if Sensor.ANGLE.value in frame_ids:
+            final_tuple += (steering(angle=angle, theme=view, size=resize),)
+        if Sensor.GPS.value in frame_ids:
+            final_tuple += (track(time_stamp=input_value, theme=view, size=resize),)
+        if Sensor.GFORCE.value in frame_ids:
+            final_tuple += (g_force(lat_g, lon_g, theme=view, size=resize),)
+        input_length = 1 + len(call_back_ids) * 2
+        while len(final_tuple) < input_length:
+            final_tuple += (update,)
+
+        return final_tuple
 
 
 def do_the_thing():

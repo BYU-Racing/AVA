@@ -84,10 +84,6 @@ def display_dashboard(all_frames, theme="Jarvis", size="medium", avail=None, num
 
     # PLOT 3: TIRE SPEEDS ----------------------------------------------------------------------------------------------
     if Sensor.TIRE1.value in avail:
-        print("trying to plot tire 1")
-        print(Sensor.TIRE1.value)
-        print(avail)
-        print()
         row += 1
         legend.update({index_trace: sensors[Sensor.TIRE1]})
         index_trace += 1
@@ -331,7 +327,7 @@ def pedals(brake=0, accel=0, minim=0, maxim=1, theme="Dark", size="medium"):
 
     # add bars for brake and accelerator
     fig.add_trace(go.Bar(
-        x=['Brake', 'Go Pedal'],
+        x=['Brake', 'Throttle'],
         y=[brake, accel],
         marker=dict(color=[themes[theme]["trace"][1][2], themes[theme]["trace"][0][2]]),
         width=0.5,
