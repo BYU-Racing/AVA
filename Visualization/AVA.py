@@ -95,17 +95,13 @@ if Sensor.GPS.value in frame_ids:
 
 # additional text data
 instant_graphs.append(
-        html.P(id='output-values', children="",
-               style={'width': '50vh', 'height': '40vh', 'display': 'inline-block',
-                      'margin': '10px',
-                      'color': themes[view]["color"][2][2],
-                      'fontFamily': themes[view]["font"]["p"],
-                      'fontSize': themes[view]["size"]["small"] + "px",
-                      'verticalAlign': 'top', 'whiteSpace': 'pre-line'}))
-
-
-
-
+    html.P(id='output-values', children="",
+           style={'width': '50vh', 'height': '40vh', 'display': 'inline-block',
+                  'margin': '10px',
+                  'color': themes[view]["color"][2][2],
+                  'fontFamily': themes[view]["font"]["p"],
+                  'fontSize': themes[view]["size"]["small"] + "px",
+                  'verticalAlign': 'top', 'whiteSpace': 'pre-line'}))
 
 # DISPLAY DASHBOARD
 app.layout = html.Div([
@@ -185,10 +181,11 @@ app.layout = html.Div([
                           },
                    updatemode='drag',
                    ),
-        ], style={'marginLeft': '50px', 'width': '80%',
-                  'fontFamily': themes[view]["font"]["title"],
-                  'color': themes[view]["color"][2][2],
-                  'fontSize': themes[view]["size"]["small"] + "px",},
+    ], style={'marginLeft': '50px', 'width': '80%',
+              'fontFamily': themes[view]["font"]["title"],
+              'color': themes[view]["color"][2][2],
+              'fontSize': themes[view]["size"]["small"] + "px", },
+        id='time-slider-container'
     ),
 
     html.Div(instant_graphs)
@@ -315,6 +312,23 @@ def select_plots(n_click0, n_click1, n_click2, n_click3, n_click4, n_click5, n_c
     return buttons
 
 
+@app.callback(
+    Output('time-slider-container', 'style'),
+    Input('size_radio', 'value')
+)
+def update_slider_width(size):
+    if size == "Expanded":
+        return {'marginLeft': '50px', 'width': '80%',
+                'fontFamily': themes[view]["font"]["title"],
+                'color': themes[view]["color"][2][2],
+                'fontSize': themes[view]["size"]["small"] + "px", }
+    else:
+        return {'marginLeft': '50px', 'width': '83.5%',
+                'fontFamily': themes[view]["font"]["title"],
+                'color': themes[view]["color"][2][2],
+                'fontSize': themes[view]["size"]["small"] + "px", }
+
+
 # SELECT TIME SLIDER AND DISPLAY MODE RADIO BUTTONS
 @app.callback(
     Output(component_id='output-values', component_property='children'),
@@ -341,11 +355,11 @@ def update_output_div(input_value, size):
     # if the input is not a valid integer, display an error message
     if time is None:
         return 'Please enter a valid decimal time greater than zero.', \
-               speedometer(0, maxim=10, theme=view), \
-               pedals(theme=view), \
-               steering(theme=view), \
-               track(theme=view), \
-               g_force(0, 0, theme=view)
+            speedometer(0, maxim=10, theme=view), \
+            pedals(theme=view), \
+            steering(theme=view), \
+            track(theme=view), \
+            g_force(0, 0, theme=view)
 
     else:
         # get the values of each subplot at the input time
@@ -354,13 +368,14 @@ def update_output_div(input_value, size):
         for i in range(len(legend)):
             trace = fig['data'][i]
             # find the index where trace['x'] is closest to the input time
-            time_index = np.abs(np.array(trace['x']/60) - time).argmin()
+            time_index = np.abs(np.array(trace['x'] / 60) - time).argmin()
             out_index = trace['x'][time_index]
             value = round(trace['y'][time_index], 4)
             values.append(f'{legend[i]}: {value}')
 
         # compute the average speed to display
-        speed = np.mean([float(values[i].split(":")[1][1:]) for i in range(3, 7)]) if Sensor.SPEED.value in frame_ids else 0
+        speed = np.mean(
+            [float(values[i].split(":")[1][1:]) for i in range(3, 7)]) if Sensor.SPEED.value in frame_ids else 0
 
         # get brake and accelerator values
         brake = float(values[1].split(":")[1][1:]) / BRAKE_MAX if Sensor.BRAKE.value in frame_ids else 0
@@ -424,6 +439,7 @@ def update_output_div(input_value, size):
 
 def do_the_thing():
     app.run_server(debug=False)
+
 
 if __name__ == '__main__':
     # webbrowser.get(CHROME).open(LOCAL_HOST)

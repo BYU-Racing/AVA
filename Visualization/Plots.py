@@ -52,7 +52,7 @@ def display_dashboard(all_frames, theme="Jarvis", size="medium", avail=None, num
         row += 1
 
         # update legend dictionary with correct sensor for other plots
-        legend.update({index_trace: sensors[Sensor.THROT]})
+        legend.update({index_trace: sensors[Sensor.THROT] + "\t"})
 
         # increment trace so that other plots can stay consistent with order
         index_trace += 1
@@ -83,8 +83,10 @@ def display_dashboard(all_frames, theme="Jarvis", size="medium", avail=None, num
 
 
     # PLOT 3: TIRE SPEEDS ----------------------------------------------------------------------------------------------
+    temp_row = 0
     if Sensor.TIRE1.value in avail:
-        row += 1
+        row += 1 if temp_row == 0 else 0
+        temp_row += 1
         legend.update({index_trace: sensors[Sensor.TIRE1]})
         index_trace += 1
 
@@ -94,11 +96,10 @@ def display_dashboard(all_frames, theme="Jarvis", size="medium", avail=None, num
                                              size=dots),
                                  mode=graph_mode, name=sensors[Sensor.TIRE1]), row=row, col=1)
 
-        fig.update_yaxes(nticks=num_ticks, title_text="Tires", row=row, col=1)
-        fig.update_xaxes(visible=False, showticklabels=False)
-
     # TIRE 2 PLOT
     if Sensor.TIRE2.value in avail:
+        row += 1 if temp_row == 0 else 0
+        temp_row += 1
         legend.update({index_trace: sensors[Sensor.TIRE2]})
         index_trace += 1
 
@@ -109,6 +110,8 @@ def display_dashboard(all_frames, theme="Jarvis", size="medium", avail=None, num
                                  mode=graph_mode, name=sensors[Sensor.TIRE2]), row=row, col=1)
     # TIRE 3 PLOT
     if Sensor.TIRE3.value in avail:
+        row += 1 if temp_row == 0 else 0
+        temp_row += 1
         legend.update({index_trace: sensors[Sensor.TIRE3]})
         index_trace += 1
 
@@ -119,6 +122,8 @@ def display_dashboard(all_frames, theme="Jarvis", size="medium", avail=None, num
                                  mode=graph_mode, name=sensors[Sensor.TIRE3]), row=row, col=1)
     # TIRE 4 PLOT
     if Sensor.TIRE4.value in avail:
+        row += 1 if temp_row == 0 else 0
+        temp_row += 1
         legend.update({index_trace: sensors[Sensor.TIRE4]})
         index_trace += 1
 
@@ -127,6 +132,11 @@ def display_dashboard(all_frames, theme="Jarvis", size="medium", avail=None, num
                                  marker=dict(color=themes[theme]["trace"][5][2],
                                              size=dots),
                                  mode=graph_mode, name=sensors[Sensor.TIRE4]), row=row, col=1)
+
+    if any(sensor_value in avail for sensor_value in
+           [Sensor.TIRE1.value, Sensor.TIRE2.value, Sensor.TIRE3.value, Sensor.TIRE4.value]):
+        fig.update_yaxes(nticks=num_ticks, title_text="Tires", row=row, col=1)
+        fig.update_xaxes(visible=False, showticklabels=False)
 
 
     # PLOT 4: STEERING WHEEL -------------------------------------------------------------------------------------------
@@ -145,8 +155,10 @@ def display_dashboard(all_frames, theme="Jarvis", size="medium", avail=None, num
 
 
     # PLOT 5: DAMPER POSITIONS -----------------------------------------------------------------------------------------
+    temp_row = 0
     if Sensor.DAMP1.value in avail:
-        row += 1
+        row += 1 if temp_row == 0 else 0
+        temp_row += 1
         legend.update({index_trace: sensors[Sensor.DAMP1]})
         index_trace += 1
 
@@ -155,12 +167,10 @@ def display_dashboard(all_frames, theme="Jarvis", size="medium", avail=None, num
                                  marker=dict(color=themes[theme]["trace"][2][2],
                                              size=dots),
                                  mode=graph_mode, name=sensors[Sensor.DAMP1]), row=row, col=1)
-
-        fig.update_yaxes(nticks=num_ticks, title_text="Dampers", row=row, col=1)
-        fig.update_xaxes(visible=False, showticklabels=False)
-
     # DAMPER 2
     if Sensor.DAMP2.value in avail:
+        row += 1 if temp_row == 0 else 0
+        temp_row += 1
         legend.update({index_trace: sensors[Sensor.DAMP2]})
         index_trace += 1
 
@@ -171,6 +181,8 @@ def display_dashboard(all_frames, theme="Jarvis", size="medium", avail=None, num
                                  mode=graph_mode, name=sensors[Sensor.DAMP2]), row=row, col=1)
     # DAMPER 3
     if Sensor.DAMP3.value in avail:
+        row += 1 if temp_row == 0 else 0
+        temp_row += 1
         legend.update({index_trace: sensors[Sensor.DAMP3]})
         index_trace += 1
 
@@ -181,6 +193,8 @@ def display_dashboard(all_frames, theme="Jarvis", size="medium", avail=None, num
                                  mode=graph_mode, name=sensors[Sensor.DAMP3]), row=row, col=1)
     # DAMPER 4
     if Sensor.DAMP4.value in avail:
+        row += 1 if temp_row == 0 else 0
+        temp_row += 1
         legend.update({index_trace: sensors[Sensor.DAMP4]})
         index_trace += 1
 
@@ -189,6 +203,11 @@ def display_dashboard(all_frames, theme="Jarvis", size="medium", avail=None, num
                                  marker=dict(color=themes[theme]["trace"][5][2],
                                              size=dots),
                                  mode=graph_mode, name=sensors[Sensor.DAMP4]), row=row, col=1)
+
+    if any(sensor_value in avail for sensor_value in
+           [Sensor.DAMP1.value, Sensor.DAMP2.value, Sensor.DAMP3.value, Sensor.DAMP4.value]):
+        fig.update_yaxes(nticks=num_ticks, title_text="Dampers", row=row, col=1)
+        fig.update_xaxes(visible=False, showticklabels=False)
 
 
     # PLOT 6: BATTERY TEMPERATURE --------------------------------------------------------------------------------------

@@ -8,7 +8,7 @@ UNIT_PERCENT = 100
 BRAKE_MAX = 1024 / UNIT_PERCENT
 THROT_MAX = 2185 / UNIT_PERCENT
 THEME = ["Arduino", "Jarvis", "Daylight"]
-SELECTED_THEME = THEME[2]
+SELECTED_THEME = THEME[1]
 SHOW_INSTANTS = False
 
 REAL_DATA = True
@@ -22,9 +22,9 @@ class Sensor(Enum):
     THROT = 192
     BRAKE = 11
     SWITCH = 15
-    DAMP1 = 12
+    DAMP2 = 12
 
-    DAMP2 = 13
+    DAMP1 = 13
     DAMP3 = 14
     DAMP4 = 10
     ANGLE = 4
@@ -160,18 +160,18 @@ themes = {"Arduino": {  # theme name
     "color": {  # color palette for graphs and backgrounds
         0: ["gray", "rgba(60,60,60,1)", "#3C3C3C"],  # assigned to overall background
         1: ["dark-gray", "rgba(40,40,40,1)", "#222222"],  # subplot background to differentiate from background
-        2: ["green", "rgba(0,154,0,1)", "#009900"],  # Text color
+        2: ["green", "rgba(0,187,0,1)", "#00BB00"],  # Text color
         3: ["white", "rgba(255,2555,255,1)", "#FFFFFF"],  # Alternate text color, also just white
         4: ["black", "rgba(0,0,0,1)", "#000000"],  # Steering wheel color, also just black
     },
     "trace": {
-        0: ["green", "rgba(0,154,0,1)", "#009900"],  # color for traces and bar charts
-        1: ["red", "rgba(154,0,0,1)", "#990000"],
-        2: ["green", "rgba(0,154,0,1)", "#009900"],  # color for traces and bar charts
-        3: ["green", "rgba(0,154,0,1)", "#009900"],
-        4: ["green", "rgba(0,154,0,1)", "#009900"],  # color for traces and bar charts
-        5: ["green", "rgba(0,154,0,1)", "#009900"],
-        6: ["green", "rgba(0,154,0,1)", "#009900"],  # color for traces and bar charts
+        0: ["green", "rgba(0,187,0,1)", "#00BB00"],  # color for traces and bar charts
+        1: ["red", "rgba(187,0,0,1)", "#BB0000"],
+        2: ["green", "rgba(0,187,0,1)", "#00BB00"],  # color for traces and bar charts
+        3: ["green", "rgba(0,187,0,1)", "#00BB00"],
+        4: ["green", "rgba(0,187,0,1)", "#00BB00"],  # color for traces and bar charts
+        5: ["green", "rgba(0,187,0,1)", "#00BB00"],
+        6: ["green", "rgba(0,187,0,1)", "#00BB00"],  # color for traces and bar charts
     },
     "size": {
         "large": "22",  # large text like graph titles
@@ -187,11 +187,11 @@ themes = {"Arduino": {  # theme name
 },
     "Jarvis": {
         "color": {
-            0: ["black", "rgba(0,0,0,1)", "#000000"],  # assigned to overall background
-            1: ["dark-gray", "rgba(16, 16, 20,1)", "#111111"],  # subplot background to differentiate from background
-            2: ["neon_blue", "rgba(2, 255, 252, 1)", "#02fffc"],  # Text color
-            3: ["white", "rgba(255,2555,255,1)", "#FFFFFF"],  # Alternate text color, also just white
-            4: ["dark-gray", "rgba(216, 216, 216,1)", "#888888"],  # Steering wheel color, also just black
+            0: ["black", "rgba(24,24,24,1)", "#181818"],  # assigned to overall background
+            1: ["dark-gray", "rgba(42, 45, 46, 1)", "#2A2D2E"],  # subplot background to differentiate from background
+            2: ["neon_blue", "rgba(84, 192, 254, 1)", "#54C0FE"],  # Text color
+            3: ["white", "rgba(238, 238, 238, 1)", "#EEEEEE"],  # Alternate text color, also just white
+            4: ["dark-gray", "rgba(216, 216, 216, 1)", "#888888"],  # Steering wheel color, also just black
         },
         "trace": {
             0: ["neon_blue", "rgba(2, 255, 252, 1)", "#02fffc"],

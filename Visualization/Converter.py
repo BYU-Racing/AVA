@@ -48,9 +48,13 @@ def readData(filename, return_times=False, verbose=False):
         for col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(pd.NA).astype('Int64')
 
+        # reindex timestamps to start from 0
+        start_time = df['Time'][0]
+        df['Time'] = df['Time'] - start_time
+
         # get the first and last timestamps
         if return_times:
-            start_time = df['Time'][0] / PARTITION / S2MIN
+            start_time = 0
             end_time = df['Time'][len(df['Time']) - 1] / PARTITION / S2MIN
             if verbose:
                 print("Start Time:", start_time, "minutes")
