@@ -13,7 +13,10 @@ from Config import themes, Sensor
 app = Dash(__name__)
 
 # load data
-source = get_latest_data() if REAL_DATA else DEFAULT_SOURCE
+source, file_names = get_latest_data() if REAL_DATA else DEFAULT_SOURCE
+print("Loading data from", source)
+print("Files used:", file_names)
+default_file = file_names[-1] if REAL_DATA else DEFAULT_FILE
 all_sensors, start_time, end_time = readData(source, return_times=True)
 
 # initialize local starting variables
@@ -125,7 +128,7 @@ app.layout = html.Div([
         html.H1('A.V.A.', style={'color': themes[view]["color"][2][2],
                                  'paddingLeft': '10px', 'paddingTop': '0px',
                                  'paddingBottom': '0px', 'margin': '0px',
-                                 'display': 'inline-block', 'width': '10%',
+                                 'display': 'inline-block', 'width': '8%',
                                  'fontFamily': themes[view]["font"]["title"],
                                  'fontStyle': 'italic', 'verticalAlign': 'bottom',
                                  'marginBottom': '5px',
@@ -156,10 +159,22 @@ app.layout = html.Div([
                            'fontFamily': themes[view]["font"]["title"],
                            'color': themes[view]["color"][2][2],
                            'fontSize': themes[view]["size"]["small"] + "px",
-                           'display': 'inline-block', 'width': '12%', "padding": '0px',
+                           'display': 'inline-block', 'width': '9%', "padding": '0px',
                            'marginLeft': '15px', 'marginTop': '0px', 'verticalAlign': 'bottom',
                            'marginBottom': '5px',
                        }),
+
+        dcc.Dropdown(file_names, default_file,
+                     id='file_dropdown',
+                     placeholder="Select a file",
+                     style={
+                         'height': '35px', 'width': '110px', 'display': 'inline-block',
+                         'padding': '0px', 'marginLeft': '10px',
+                         'fontFamily': themes[view]["font"]["title"],
+                         'color': themes[view]["color"][2][2],
+                         'fontSize': themes[view]["size"]["small"] + "px",
+                         'verticalAlign': 'bottom', 'marginBottom': '5px',
+                     }),
     ]),
 
     # main line charts
@@ -197,6 +212,42 @@ app.layout = html.Div([
 
 
 # CALLBACK FUNCTIONS ---------------------------------------------------------------------------------------------------
+
+# CHANGE DATA BASED ON FILE SELECTION
+# @app.callback(
+#     Output('car_go_fast', 'figure'),
+#     Output('time-slider', 'max'),
+#     Output(component_id='output-values', component_property='children'),
+#     *[Output(component_id=call_id, component_property='figure') for call_id in call_back_ids],
+#     Input('file_dropdown', 'value'),
+# )
+# def update_source(file_name):
+#     """
+#     Update the data source based on the selected file
+#     :param file_name: the name of the selected file
+#     :return: updated main line chart, updated time slider, and updated instantaneous values
+#     """
+#     global all_sensors, start_time, end_time, duration, frame_ids, fig, source, spd, pdl
+#
+#     # load data
+#     source = DATA_PATH + file_name + FILE_TYPE
+#     all_sensors, start_time, end_time = readData(source, return_times=True)
+#     duration = end_time + start_time
+#
+#     # construct initial plots
+#     frame_ids = [sid for sid in all_sensors.keys()]
+#     fig = display_dashboard(all_sensors, theme=view, avail=frame_ids, num_plots=3)
+#     spd = speedometer(0, theme=view)
+#     pdl = pedals(theme=view)
+#
+#     # return figures
+#     final_tuple = (fig, end_time, "", spd, pdl)
+#     input_length = 3 + len(call_back_ids)
+#     while len(final_tuple) < input_length:
+#         final_tuple += (spd,)
+#
+#     return final_tuple
+
 
 # SELECT SUBPLOT BUTTONS
 @app.callback(
@@ -240,54 +291,22 @@ def select_plots(n_click0, n_click1, n_click2, n_click3, n_click4, n_click5, n_c
     # build available list based on which subplots to display
     avail = []
     show_count = 0
-    for i in range(len(on)):
-        if i == 0 and on[i] == 0 and Sensor.THROT.value in frame_ids:
-            avail.append(Sensor.THROT.value)
-            show_count += 1
-        elif i == 1 and on[i] == 0 and Sensor.BRAKE.value in frame_ids:
-            avail.append(Sensor.BRAKE.value)
-            show_count += 1
-        elif i == 2 and on[i] == 0:
-            tire_count = 0
-            if Sensor.TIRE1.value in frame_ids:
-                avail.append(Sensor.TIRE1.value)
-                tire_count += 1
-            if Sensor.TIRE2.value in frame_ids:
-                avail.append(Sensor.TIRE2.value)
-                tire_count += 1
-            if Sensor.TIRE3.value in frame_ids:
-                avail.append(Sensor.TIRE3.value)
-                tire_count += 1
-            if Sensor.TIRE4.value in frame_ids:
-                avail.append(Sensor.TIRE4.value)
-                tire_count += 1
-            if tire_count > 0:
-                show_count += 1
-        elif i == 3 and on[i] == 0 and Sensor.ANGLE.value in frame_ids:
-            show_count += 1
-            avail.append(Sensor.ANGLE.value)
-        elif i == 4 and on[i] == 0:
-            damp_count = 0
-            if Sensor.DAMP1.value in frame_ids:
-                avail.append(Sensor.DAMP1.value)
-                damp_count += 1
-            if Sensor.DAMP2.value in frame_ids:
-                avail.append(Sensor.DAMP2.value)
-                damp_count += 1
-            if Sensor.DAMP3.value in frame_ids:
-                avail.append(Sensor.DAMP3.value)
-                damp_count += 1
-            if Sensor.DAMP4.value in frame_ids:
-                avail.append(Sensor.DAMP4.value)
-                damp_count += 1
-            if damp_count > 0:
-                show_count += 1
-        elif i == 5 and on[i] == 0 and Sensor.TEMP.value in frame_ids:
-            show_count += 1
-            avail.append(Sensor.TEMP.value)
-        elif i == 6 and on[i] == 0 and Sensor.GFORCE.value in frame_ids:
-            show_count += 1
-            avail.append(Sensor.GFORCE.value)
+
+    # Iterate over the sensor map
+    for i, sensor in button_sensor_map.items():
+        # If the plot is turned on
+        if on[i] == 0:
+            # If the plot index has a list of values (tires or dampers)
+            if isinstance(sensor, list):
+                # Add the available sensors to the list
+                avail.extend([s for s in sensor if s in frame_ids])
+                # Increment the show count if any of the sensors are available
+                show_count += any(s in frame_ids for s in sensor)
+            else:
+                # If the sensor is a single value, add it to the list if it's available
+                if sensor in frame_ids:
+                    avail.append(sensor)
+                    show_count += 1
 
     # built output list
     buttons = [button_style[i % 2] for i in index]
@@ -390,13 +409,6 @@ def update_output_div(input_value, size):
         second = int((time - minute) * 60)
         placeholder = "0" if second < 10 else ""
         extra = f"Time = {minute}:{placeholder}{second}" + " | " + str(out_index) + "s\n\n" + '\n'.join(values[-5:])
-        """id='output-values',
-        style={'width': '50vh', 'height': '40vh', 'display': 'inline-block',
-          'color': themes[view]["color"][2][2],
-          'fontFamily': themes[view]["font"]["p"],
-          'fontSize': themes[view]["size"]["small"] + "px",
-          'verticalAlign': 'top', 'whiteSpace': 'pre-line'}
-        )"""
 
         # get steering angle
         angle = float(values[9].split(":")[1][1:]) if Sensor.ANGLE.value in frame_ids else 0

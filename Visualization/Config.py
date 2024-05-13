@@ -13,7 +13,9 @@ SHOW_INSTANTS = False
 
 REAL_DATA = True
 DATA_PATH = 'Data/'
-DEFAULT_SOURCE = DATA_PATH + 'Master.csv'
+DEFAULT_FILE = "Master"
+FILE_TYPE = ".csv"
+DEFAULT_SOURCE = DATA_PATH + DEFAULT_FILE + FILE_TYPE
 LOCAL_HOST = "http://127.0.0.1:8050/"
 CHROME = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s"
 
@@ -38,6 +40,17 @@ class Sensor(Enum):
     SPEED = 19
     GPS = 20
 
+
+# dictionary that maps indices to sensor values for the button toggle callback function
+button_sensor_map = {
+    0: Sensor.THROT.value,
+    1: Sensor.BRAKE.value,
+    2: [Sensor.TIRE1.value, Sensor.TIRE2.value, Sensor.TIRE3.value, Sensor.TIRE4.value],
+    3: Sensor.ANGLE.value,
+    4: [Sensor.DAMP1.value, Sensor.DAMP2.value, Sensor.DAMP3.value, Sensor.DAMP4.value],
+    5: Sensor.TEMP.value,
+    6: Sensor.GFORCE.value
+}
 
 # convert each sensor index to its abbreviated name
 sensor_names = {

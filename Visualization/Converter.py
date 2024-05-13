@@ -358,4 +358,5 @@ def get_latest_data():
 
     # sort the files by number lowest to highest and return the last file
     files.sort(key=lambda x: int(x.split(".")[0]))
-    return DATA_PATH + files[-1]
+    file_names = [f.split(".")[0] for f in files]
+    return DATA_PATH + files[-1], file_names
